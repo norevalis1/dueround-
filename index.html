@@ -293,7 +293,17 @@
   $("brand").appendChild(document.createTextNode(BRAND.slice(3)));
   document.title = BRAND + ": renewal reminders for service businesses";
   $("offer").textContent = "It’s free to join. We’ll email you once, when it’s ready to try. Founding members keep " + PRICE_TEXT + " for as long as they stay subscribed.";
-  $("foot").textContent = BRAND + " is being built. This page measures interest before we finish it, so nothing here is for sale yet. Your email is used only to tell you when it’s ready, and you can ask to have it deleted at any time" + (CONTACT_EMAIL ? " by writing to " + CONTACT_EMAIL : "") + ".";
+  var foot = $("foot");
+  foot.textContent = BRAND + " is being built. This page measures interest before we finish it, so nothing here is for sale yet. Your email is used only to tell you when it’s ready, and you can ask to have it deleted at any time" + (CONTACT_EMAIL ? " by writing to " : "");
+  if (CONTACT_EMAIL) {
+    var mail = document.createElement("a");
+    mail.href = "mailto:" + CONTACT_EMAIL + "?subject=" + encodeURIComponent(BRAND + " request");
+    mail.textContent = CONTACT_EMAIL;
+    mail.style.color = "inherit";
+    mail.style.textDecoration = "underline";
+    foot.appendChild(mail);
+  }
+  foot.appendChild(document.createTextNode("."));
   if (PAY_LINK && /^https:\/\//.test(PAY_LINK)) {
     $("paylink").href = PAY_LINK; $("paynote").textContent = PAY_NOTE; $("paybox").hidden = false;
   }
