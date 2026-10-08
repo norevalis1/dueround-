@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>DueRound: renewal reminders for service businesses</title>
+<meta name="description" content="A phone app for HVAC, pest, lawn and pool owners. See which customers are due for service or renewal and send the reminder text in one tap.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap">
+
+<!--
+  DUEROUND TEST PAGE
+  Purpose: find out whether service-business owners want this BEFORE the app is built.
+  The only thing that matters is how many people join the list, and which group they came from.
+
+  THINGS YOU MAY EDIT (the CONFIG block in the script at the bottom):
+  - BRAND, PRICE_TEXT, CONTACT_EMAIL, PAY_LINK
+-->
+
+<style>
+  :root {
+    --bg: #e8ebee;        /* concrete */
+    --paper: #ffffff;
+    --ink: #11161b;
+    --steel: #55616b;
+    --line: #c5ccd2;
+    --canary: #ffd23f;    /* the one accent: carbonless-form yellow */
+    --canary-ink: #11161b;
+    --red: #c93a24;
+    --green: #1f7a4d;
+    --focus: #1a5fd0;
+    --radius: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12171b; --paper: #1b2228; --ink: #eef1f3; --steel: #9aa7b1; --line: #2e3841;
+      --red: #ff7a63; --green: #5fd196; --focus: #7db0ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-stretch: 100%; font-size: 17px; line-height: 1.55;
+    padding: 0 max(16px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(16px, env(safe-area-inset-left));
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  a { color: inherit; }
+
+  /* ---------- top bar ---------- */
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0 8px; }
+  .brand { font-weight: 800; font-stretch: 75%; font-size: 26px; letter-spacing: .01em; text-decoration: none; }
+  .brand i { font-style: normal; background: var(--canary); color: var(--canary-ink); padding: 0 6px; border-radius: 3px; }
+  .toplink { font-weight: 600; font-size: 15px; }
+
+  /* ---------- hero ---------- */
+  .hero { display: grid; gap: 28px; padding: 26px 0 40px; }
+  h1 {
+    font-weight: 850; font-stretch: 68%; line-height: .98; letter-spacing: -.005em;
+    font-size: clamp(46px, 13vw, 92px); margin: 0 0 18px; text-wrap: balance;
+  }
+  .lede { font-size: 19px; max-width: 34ch; margin: 0 0 22px; color: var(--ink); }
+  .btn {
+    display: inline-block; font: inherit; font-weight: 700; font-stretch: 90%;
+    background: var(--ink); color: var(--bg); border: 0; border-radius: var(--radius);
+    padding: 14px 22px; min-height: 48px; cursor: pointer; text-decoration: none;
+  }
+  .btn:hover { filter: brightness(1.12); }
+  .btn[disabled] { opacity: .6; cursor: default; }
+  .btn.alt { background: transparent; color: var(--ink); border: 2px solid var(--ink); }
+
+  /* ---------- the due-list ticket (the interactive example) ---------- */
+  .ticket {
+    position: relative; background: var(--canary); color: var(--canary-ink);
+    border-radius: 4px; padding: 18px 16px 14px;
+    box-shadow: 0 1px 0 rgba(0,0,0,.25), 0 14px 30px -18px rgba(0,0,0,.55);
+  }
+  .ticket::before, .ticket::after {
+    content: ""; position: absolute; left: 0; right: 0; height: 8px;
+    background: radial-gradient(circle at 6px 0, var(--bg) 4px, transparent 4.5px) 0 0 / 12px 8px repeat-x;
+  }
+  .ticket::before { top: -1px; }
+  .ticket::after  { bottom: -1px; transform: scaleY(-1); }
+  .ticket-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 6px 0 10px; }
+  .ticket-head h2 { margin: 0; font-size: 22px; font-weight: 800; font-stretch: 78%; }
+  .example-tag { font-size: 13px; font-weight: 600; border: 1.5px solid currentColor; border-radius: 3px; padding: 1px 7px; white-space: nowrap; }
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .row { border-top: 1.5px dashed rgba(17,22,27,.45); padding: 12px 0; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+  .row .who { font-weight: 700; }
+  .row .what { font-size: 15px; grid-column: 1; }
+  .row .when { font-size: 14px; font-weight: 700; }
+  .row .when.late { color: #9b1f0d; }
+  .row .acts { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .mini {
+    font: inherit; font-weight: 700; font-size: 15px; min-height: 44px; min-width: 76px; padding: 0 12px;
+    border-radius: 4px; border: 2px solid var(--canary-ink); background: var(--canary-ink); color: var(--canary); cursor: pointer;
+  }
+  .mini.ghost { background: transparent; color: var(--canary-ink); }
+  .state { font-weight: 800; font-size: 15px; }
+  .state.ok { color: #0f5d37; }
+  .state.no { color: #5b4b00; }
+  .total { display: flex; justify-content: space-between; align-items: baseline; border-top: 2.5px solid var(--canary-ink); padding-top: 12px; margin-top: 2px; font-weight: 800; }
+  .total output { font-size: 28px; font-stretch: 75%; }
+  .reset { background: none; border: 0; font: inherit; font-size: 14px; text-decoration: underline; color: inherit; cursor: pointer; padding: 10px 0 2px; min-height: 44px; }
+  .hint { font-size: 14px; margin: 8px 0 0; }
+
+  /* ---------- sections ---------- */
+  section { padding: 38px 0; border-top: 2px solid var(--ink); }
+  h2.sec { font-size: clamp(30px, 7vw, 46px); font-weight: 850; font-stretch: 72%; line-height: 1.02; margin: 0 0 18px; }
+  .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 18px; counter-reset: s; }
+  .steps li { counter-increment: s; padding-left: 52px; position: relative; max-width: 52ch; }
+  .steps li::before {
+    content: counter(s); position: absolute; left: 0; top: 0; width: 38px; height: 38px; border-radius: 50%;
+    background: var(--ink); color: var(--bg); display: grid; place-items: center; font-weight: 800; font-stretch: 80%; font-size: 20px;
+  }
+  .steps b { display: block; font-size: 19px; font-weight: 750; }
+  .steps span { color: var(--steel); }
+
+  .calc { background: var(--paper); border: 2px solid var(--ink); border-radius: var(--radius); padding: 18px; max-width: 620px; }
+  .calc .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+  label { display: block; font-weight: 650; font-size: 15px; margin-bottom: 4px; }
+  input, select {
+    font: inherit; width: 100%; min-height: 48px; padding: 8px 12px; border-radius: var(--radius);
+    border: 2px solid var(--line); background: var(--bg); color: var(--ink);
+  }
+  input:focus, select:focus { border-color: var(--ink); }
+  .calc-out { margin-top: 16px; padding-top: 14px; border-top: 2px dashed var(--line); }
+  .calc-out strong { font-size: 34px; font-weight: 850; font-stretch: 72%; display: block; line-height: 1.1; }
+  .fine { font-size: 14px; color: var(--steel); }
+
+  ul.plain { padding-left: 20px; max-width: 54ch; margin: 0; }
+  ul.plain li { margin-bottom: 8px; }
+
+  form.join { background: var(--paper); border: 2px solid var(--ink); border-radius: var(--radius); padding: 20px 18px; max-width: 620px; display: grid; gap: 14px; }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .msg { min-height: 1.4em; font-weight: 650; }
+  .msg.err { color: var(--red); }
+  .msg.ok { color: var(--green); }
+  footer { padding: 28px 0 40px; border-top: 2px solid var(--ink); color: var(--steel); font-size: 14px; max-width: 70ch; }
+
+  @media (min-width: 860px) {
+    body { font-size: 18px; }
+    .hero { grid-template-columns: 1.1fr .9fr; align-items: center; gap: 56px; padding: 56px 0 64px; }
+    .calc .grid { grid-template-columns: repeat(3, 1fr); }
+    .ticket { transform: rotate(1.2deg); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .mini, .btn { transition: filter .12s ease; }
+    .total output.bump { animation: bump .35s ease; }
+    @keyframes bump { 40% { transform: translateY(-4px); } }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <a class="brand" href="#top" id="brand"></a>
+    <a class="toplink" href="#join">Reserve a spot</a>
+  </header>
+
+  <main id="top">
+    <div class="hero">
+      <div>
+        <h1>Know who’s due before they call someone else.</h1>
+        <p class="lede">A phone app for HVAC, pest, lawn and pool owners. It shows which customers are coming up for service or renewal, with the reminder text ready to send.</p>
+        <a class="btn" href="#join">Reserve a founding spot</a>
+      </div>
+
+      <div>
+        <div class="ticket" aria-labelledby="tk-h">
+          <div class="ticket-head">
+            <h2 id="tk-h">Due this week</h2>
+            <span class="example-tag">Example data</span>
+          </div>
+          <ul class="rows" id="rows"></ul>
+          <div class="total"><span>Booked from this list</span><output id="booked" aria-live="polite">$0</output></div>
+          <button class="reset" type="button" id="reset">Reset example</button>
+          <p class="hint">Try it: tap Text, then Booked.</p>
+        </div>
+      </div>
+    </div>
+
+    <section aria-labelledby="how">
+      <h2 class="sec" id="how">How it works</h2>
+      <ol class="steps">
+        <li><b>Add your customers.</b><span>Paste in your spreadsheet or type them in. Each customer gets a service and how often it repeats.</span></li>
+        <li><b>See who’s due.</b><span>One list, overdue first. A notification each morning tells you how many are waiting.</span></li>
+        <li><b>Send the text.</b><span>One tap opens your own messages with the reminder written. You press send, then mark it booked or not now.</span></li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="calc-h">
+      <h2 class="sec" id="calc-h">What a few renewals are worth</h2>
+      <div class="calc">
+        <div class="grid">
+          <div><label for="c-n">Customers on a yearly plan</label><input id="c-n" type="number" inputmode="numeric" min="0" max="100000" value="150"></div>
+          <div><label for="c-p">Value of one plan, per year ($)</label><input id="c-p" type="number" inputmode="numeric" min="0" max="100000" value="285"></div>
+          <div><label for="c-l">Extra renewals you’d win back (%)</label><input id="c-l" type="number" inputmode="numeric" min="0" max="100" value="5"></div>
+        </div>
+        <div class="calc-out" aria-live="polite">
+          <strong id="c-out">$0</strong>
+          <span id="c-note"></span>
+        </div>
+        <p class="fine">This is arithmetic on the numbers you enter, not a promise of results. The starting figures are examples.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="not-h">
+      <h2 class="sec" id="not-h">What it doesn’t do</h2>
+      <ul class="plain">
+        <li>It doesn’t send texts for you. They go from your phone, to your customers, under your name.</li>
+        <li>Your customers don’t need an account or an app.</li>
+        <li>It doesn’t take payments from your customers.</li>
+        <li>It isn’t a scheduler or invoicing system. It works next to whatever you use now.</li>
+      </ul>
+    </section>
+
+    <section id="join" aria-labelledby="join-h">
+      <h2 class="sec" id="join-h">Reserve a founding spot</h2>
+      <p style="max-width:52ch" id="offer"></p>
+      <form class="join" id="form" novalidate>
+        <div>
+          <label for="f-email">Email</label>
+          <input id="f-email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="254" required placeholder="you@yourbusiness.com">
+        </div>
+        <div>
+          <label for="f-trade">What kind of business?</label>
+          <select id="f-trade" name="trade" required>
+            <option value="">Choose one</option>
+            <option value="hvac">Heating and cooling</option>
+            <option value="pest">Pest control</option>
+            <option value="lawn">Lawn care</option>
+            <option value="pool">Pool service</option>
+            <option value="gutter">Gutters or exterior cleaning</option>
+            <option value="other">Something else</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-track">How do you keep track of renewals now?</label>
+          <select id="f-track" name="tracking" required>
+            <option value="">Choose one</option>
+            <option value="spreadsheet">Spreadsheet</option>
+            <option value="notebook">Paper or notebook</option>
+            <option value="memory">Memory</option>
+            <option value="software">Other software</option>
+            <option value="nothing">I don’t</option>
+          </select>
+        </div>
+        <div class="hp" aria-hidden="true"><label>Leave this empty<input id="f-web" name="website" tabindex="-1" autocomplete="off"></label></div>
+        <button class="btn" type="submit" id="send">Reserve my spot</button>
+        <p class="msg" id="msg" role="status"></p>
+        <div id="paybox" hidden>
+          <a class="btn alt" id="paylink" href="#" rel="noopener">Pay now to lock in the founding price</a>
+          <p class="fine" id="paynote"></p>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <p id="foot"></p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // =================== CONFIG: safe to edit ===================
+  var BRAND = "DueRound";                    // working name; do a trademark search before spending money on branding
+  var PRICE_TEXT = "$19 a month";            // the founding price shown on the page
+  var CONTACT_EMAIL = "dueround@gmail.com";                  // optional, e.g. "hello@yourdomain.com"; leave "" to hide
+  var PAY_LINK = "";                         // optional Stripe payment link; leave "" until you create one
+  var PAY_NOTE = "";                         // what you promise about refunds, if you use PAY_LINK
+  var SUPABASE_URL = "https://ujmcxqopymupiwakwfdb.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_BRYsZUKxHwL43t36mRF0nA_YF-6rMsQ"; // public key, safe in the page
+  var PAGE_ID = "renewals";
+  // ============================================================
+
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (n) { return "$" + Math.round(n).toLocaleString("en-US"); };
+
+  // ---------- text that depends on config ----------
+  $("brand").innerHTML = "<i></i>";                       // fixed markup, no user text
+  $("brand").firstChild.textContent = BRAND.slice(0, 3);
+  $("brand").appendChild(document.createTextNode(BRAND.slice(3)));
+  document.title = BRAND + ": renewal reminders for service businesses";
+  $("offer").textContent = "It’s free to join. We’ll email you once, when it’s ready to try. Founding members keep " + PRICE_TEXT + " for as long as they stay subscribed.";
+  $("foot").textContent = BRAND + " is being built. This page measures interest before we finish it, so nothing here is for sale yet. Your email is used only to tell you when it’s ready, and you can ask to have it deleted at any time" + (CONTACT_EMAIL ? " by writing to " + CONTACT_EMAIL : "") + ".";
+  if (PAY_LINK && /^https:\/\//.test(PAY_LINK)) {
+    $("paylink").href = PAY_LINK; $("paynote").textContent = PAY_NOTE; $("paybox").hidden = false;
+  }
+
+  // ---------- the interactive example ----------
+  var DATA = [
+    { who: "Sam Ortiz",     what: "AC tune-up",       when: "Due Oct 14",           late: false, value: 285 },
+    { who: "Priya Nair",    what: "Quarterly pest",   when: "6 days overdue",       late: true,  value: 120 },
+    { who: "Dale Whitfield",what: "Pool opening",     when: "Due Oct 21",           late: false, value: 240 },
+    { who: "Marcy Lin",     what: "Furnace check",    when: "12 days overdue",      late: true,  value: 159 }
+  ];
+  var state = DATA.map(function () { return "due"; });
+  var rowsEl = $("rows");
+
+  function mk(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  function render(bump) {
+    rowsEl.textContent = "";
+    var total = 0;
+    DATA.forEach(function (d, i) {
+      var li = mk("li", "row");
+      li.appendChild(mk("div", "who", d.who));
+      var sub = mk("div", "what");
+      sub.appendChild(document.createTextNode(d.what + " \u00b7 "));
+      sub.appendChild(mk("span", "when" + (d.late ? " late" : ""), d.when));
+      li.appendChild(sub);
+      var acts = mk("div", "acts");
+      if (state[i] === "due") {
+        var t = mk("button", "mini", "Text " + d.who.split(" ")[0]); t.type = "button";
+        t.addEventListener("click", function () { state[i] = "texted"; render(); focusRow(i); });
+        acts.appendChild(t);
+      } else if (state[i] === "texted") {
+        var b = mk("button", "mini", "Booked"); b.type = "button";
+        b.addEventListener("click", function () { state[i] = "booked"; render(true); });
+        var n = mk("button", "mini ghost", "Not now"); n.type = "button";
+        n.addEventListener("click", function () { state[i] = "later"; render(); });
+        acts.appendChild(b); acts.appendChild(n);
+      } else if (state[i] === "booked") {
+        acts.appendChild(mk("span", "state ok", "Booked, " + fmt(d.value)));
+        total += d.value;
+      } else {
+        acts.appendChild(mk("span", "state no", "Asked again later"));
+      }
+      li.appendChild(acts);
+      rowsEl.appendChild(li);
+    });
+    var out = $("booked");
+    out.textContent = fmt(total);
+    if (bump === true) { out.classList.remove("bump"); void out.offsetWidth; out.classList.add("bump"); }
+  }
+  function focusRow(i) {
+    var btn = rowsEl.children[i] && rowsEl.children[i].querySelector("button");
+    if (btn) btn.focus();
+  }
+  $("reset").addEventListener("click", function () { state = DATA.map(function () { return "due"; }); render(); });
+  render();
+
+  // ---------- calculator ----------
+  function calc() {
+    function num(id, max) { var v = parseFloat($(id).value); if (!isFinite(v) || v < 0) v = 0; return Math.min(v, max); }
+    var n = num("c-n", 100000), p = num("c-p", 100000), l = num("c-l", 100);
+    var gain = n * p * (l / 100);
+    $("c-out").textContent = fmt(gain) + " a year";
+    var plan = 19 * 12;
+    $("c-note").textContent = gain > 0
+      ? "That is about " + (gain / plan >= 10 ? Math.round(gain / plan) : (gain / plan).toFixed(1)) + " times the yearly cost of a $19 plan."
+      : "Enter your numbers above.";
+  }
+  ["c-n", "c-p", "c-l"].forEach(function (id) { $(id).addEventListener("input", calc); });
+  calc();
+
+  // ---------- join form ----------
+  var src = "";
+  try { src = (new URLSearchParams(location.search).get("src") || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 40); } catch (e) {}
+  var msg = $("msg"), send = $("send");
+  function say(text, cls) { msg.textContent = text; msg.className = "msg" + (cls ? " " + cls : ""); }
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  $("form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if ($("f-web").value) { say("You’re on the list. We’ll email you when it’s ready to try.", "ok"); return; }   // bots land here
+    var email = $("f-email").value.trim(), trade = $("f-trade").value, tracking = $("f-track").value;
+    if (!EMAIL_RE.test(email) || email.length > 254) { say("Enter a valid email address.", "err"); $("f-email").focus(); return; }
+    if (!trade) { say("Choose your kind of business.", "err"); $("f-trade").focus(); return; }
+    if (!tracking) { say("Choose how you track renewals now.", "err"); $("f-track").focus(); return; }
+
+    send.disabled = true; say("Saving…");
+    fetch(SUPABASE_URL + "/rest/v1/waitlist", {
+      method: "POST",
+      headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
+      body: JSON.stringify({ email: email, trade: trade, tracking: tracking, source: src || null, page: PAGE_ID })
+    }).then(function (r) {
+      if (r.status === 201 || r.status === 204) { say("You’re on the list. We’ll email you when it’s ready to try.", "ok"); $("form").reset(); send.textContent = "Reserved"; return; }
+      if (r.status === 409) { say("That email is already on the list.", "ok"); send.disabled = false; return; }
+      say("That didn’t save. Check your connection and try again.", "err"); send.disabled = false;
+    }).catch(function () {
+      say("That didn’t save. Check your connection and try again.", "err"); send.disabled = false;
+    });
+  });
+})();
+</script>
+</body>
+</html>
