@@ -134,6 +134,10 @@
   .calc-out strong { font-size: 34px; font-weight: 850; font-stretch: 72%; display: block; line-height: 1.1; }
   .fine { font-size: 14px; color: var(--steel); }
 
+  .feats { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; grid-template-columns: 1fr; }
+  .feats li { background: var(--paper); border: 2px solid var(--ink); border-radius: var(--radius); padding: 14px 16px; }
+  .feats b { display: block; font-size: 18px; font-weight: 750; margin-bottom: 2px; }
+  .feats span { color: var(--steel); font-size: 16px; }
   ul.plain { padding-left: 20px; max-width: 54ch; margin: 0; }
   ul.plain li { margin-bottom: 8px; }
 
@@ -148,6 +152,7 @@
     body { font-size: 18px; }
     .hero { grid-template-columns: 1.1fr .9fr; align-items: center; gap: 56px; padding: 56px 0 64px; }
     .calc .grid { grid-template-columns: repeat(3, 1fr); }
+    .feats { grid-template-columns: repeat(2, 1fr); }
     .ticket { transform: rotate(1.2deg); }
   }
   @media (prefers-reduced-motion: no-preference) {
@@ -212,6 +217,17 @@
       </div>
     </section>
 
+    <section aria-labelledby="feat-h">
+      <h2 class="sec" id="feat-h">Built to save you typing and remembering</h2>
+      <ul class="feats">
+        <li><b>Set up in minutes, not evenings.</b><span>Pick your trade and the usual schedules are filled in. Bring customers in from a spreadsheet, a photo of your notebook page, or your phone contacts.</span></li>
+        <li><b>A morning heads-up with the money on it.</b><span>“5 customers due this week, worth about $1,240.” On your lock screen, so you know without opening anything.</span></li>
+        <li><b>Customers due near each other.</b><span>See who’s due on the same side of town and fill one afternoon’s route.</span></li>
+        <li><b>Reminders before the weather turns.</b><span>Furnace checks before the first cold snap, AC before the first hot week, pool openings in spring.</span></li>
+        <li><b>Win back customers you’ve lost track of.</b><span>Anyone you haven’t served in a year, sorted by what they used to spend.</span></li>
+        <li><b>Work the list with your thumb.</b><span>Swipe through who’s due. Texts are written for each customer, in English or Spanish, and a quick “Did they book?” keeps the list honest.</span></li>
+      </ul>
+    </section>
     <section aria-labelledby="not-h">
       <h2 class="sec" id="not-h">What it doesn’t do</h2>
       <ul class="plain">
@@ -251,6 +267,17 @@
             <option value="memory">Memory</option>
             <option value="software">Other software</option>
             <option value="nothing">I don’t</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-want">Which would help you most?</label>
+          <select id="f-want" name="wants" required>
+            <option value="">Choose one</option>
+            <option value="due_list">A due list with the texts written for me</option>
+            <option value="nearby">Seeing who’s due near each other</option>
+            <option value="weather">Reminders before the weather turns</option>
+            <option value="winback">Winning back customers I’ve lost track of</option>
+            <option value="import">Getting my spreadsheet or notebook in easily</option>
           </select>
         </div>
         <div class="hp" aria-hidden="true"><label>Leave this empty<input id="f-web" name="website" tabindex="-1" autocomplete="off"></label></div>
@@ -385,16 +412,17 @@
   $("form").addEventListener("submit", function (ev) {
     ev.preventDefault();
     if ($("f-web").value) { say("You’re on the list. We’ll email you when it’s ready to try.", "ok"); return; }   // bots land here
-    var email = $("f-email").value.trim(), trade = $("f-trade").value, tracking = $("f-track").value;
+    var email = $("f-email").value.trim(), trade = $("f-trade").value, tracking = $("f-track").value, wants = $("f-want").value;
     if (!EMAIL_RE.test(email) || email.length > 254) { say("Enter a valid email address.", "err"); $("f-email").focus(); return; }
     if (!trade) { say("Choose your kind of business.", "err"); $("f-trade").focus(); return; }
     if (!tracking) { say("Choose how you track renewals now.", "err"); $("f-track").focus(); return; }
+    if (!wants) { say("Choose what would help you most.", "err"); $("f-want").focus(); return; }
 
     send.disabled = true; say("Saving…");
     fetch(SUPABASE_URL + "/rest/v1/waitlist", {
       method: "POST",
       headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
-      body: JSON.stringify({ email: email, trade: trade, tracking: tracking, source: src || null, page: PAGE_ID })
+      body: JSON.stringify({ email: email, trade: trade, tracking: tracking, wants: wants, source: src || null, page: PAGE_ID })
     }).then(function (r) {
       if (r.status === 201 || r.status === 204) { say("You’re on the list. We’ll email you when it’s ready to try.", "ok"); $("form").reset(); send.textContent = "Reserved"; return; }
       if (r.status === 409) { say("That email is already on the list.", "ok"); send.disabled = false; return; }
