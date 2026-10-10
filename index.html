@@ -398,7 +398,12 @@
     }).then(function (r) {
       if (r.status === 201 || r.status === 204) { say("You’re on the list. We’ll email you when it’s ready to try.", "ok"); $("form").reset(); send.textContent = "Reserved"; return; }
       if (r.status === 409) { say("That email is already on the list.", "ok"); send.disabled = false; return; }
-      say("That didn’t save. Check your connection and try again.", "err"); send.disabled = false;
+      return r.text().then(function (body) {
+        if (r.status === 429 || body.indexOf("WL429") !== -1) say("Lots of people are signing up right now. Try again in a few minutes.", "err");   // database speed limit
+        else if (body.indexOf("Waitlist is full") !== -1) say("The waitlist is full for now. Thanks for your interest.", "err");                // database 5,000 cap
+        else say("That didn’t save. Check your connection and try again.", "err");
+        send.disabled = false;
+      });
     }).catch(function () {
       say("That didn’t save. Check your connection and try again.", "err"); send.disabled = false;
     });
