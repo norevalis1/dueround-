@@ -6,11 +6,17 @@
 <meta name="color-scheme" content="light dark">
 <title>DueRound: renewal reminders for service businesses</title>
 <meta name="description" content="A phone app for HVAC, pest, lawn and pool owners. See which customers are due for service or renewal and send the reminder text in one tap.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ffd23f'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-weight='900' font-size='18' text-anchor='middle' fill='%2311161b'%3ED%3C/text%3E%3C/svg%3E">
+<!-- The font is served from this site (fonts/), trimmed to Latin letters and the weights/widths the page uses.
+     That saves two extra connections to Google before the page can show text. -->
+<link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+<script>
+  // Refuse to run inside someone else's page (stops "clickjacking" on the sign-up form).
+  // GitHub Pages can't send the header that normally does this, so we do it here.
+  if (window.top !== window.self) { try { window.top.location = window.self.location; } catch (e) { document.documentElement.style.display = "none"; } }
+</script>
 
 <!--
   DUEROUND TEST PAGE
@@ -22,6 +28,11 @@
 -->
 
 <style>
+  @font-face {
+    font-family: "Archivo"; font-style: normal; font-display: swap;
+    font-weight: 400 900; font-stretch: 62% 100%;
+    src: url(fonts/archivo-latin.woff2) format("woff2");
+  }
   :root {
     --bg: #e8ebee;        /* concrete */
     --paper: #ffffff;
