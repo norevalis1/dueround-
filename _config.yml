@@ -1,0 +1,3 @@
+# Keep the test scripts out of the published site (they stay in the repo).
+exclude:
+  - security-tests
