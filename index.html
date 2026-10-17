@@ -320,7 +320,9 @@
 
   // =================== CONFIG: safe to edit ===================
   var BRAND = "DueRound";                    // working name; do a trademark search before spending money on branding
-  var PRICE_TEXT = "$19 a month";            // the founding price shown on the page
+  var PRICE_TEXT = "$12 a month";            // the founding price (first 50 paying owners)
+  var FOUNDING_SPOTS = 50;                   // how many owners get the founding price
+  var REGULAR_PRICE = 19;                    // the monthly price after the founding spots are gone
   var CONTACT_EMAIL = "dueround@gmail.com";                  // optional, e.g. "hello@yourdomain.com"; leave "" to hide
   var PAY_LINK = "";                         // optional Stripe payment link; leave "" until you create one
   var PAY_NOTE = "";                         // what you promise about refunds, if you use PAY_LINK
@@ -337,7 +339,7 @@
   $("brand").firstChild.textContent = BRAND.slice(0, 3);
   $("brand").appendChild(document.createTextNode(BRAND.slice(3)));
   document.title = BRAND + ": renewal reminders for service businesses";
-  $("offer").textContent = "It’s free to join. We’ll email you once, when it’s ready to try. Founding members keep " + PRICE_TEXT + " for as long as they stay subscribed.";
+  $("offer").textContent = "It’s free to join. We’ll email you once, when it’s ready to try. The first " + FOUNDING_SPOTS + " owners who subscribe pay " + PRICE_TEXT + " for as long as they stay subscribed. After that it’s $" + REGULAR_PRICE + " a month.";
   var foot = $("foot");
   foot.textContent = BRAND + " is being built. This page measures interest before we finish it, so nothing here is for sale yet. Your email is used only to tell you when it’s ready, and you can ask to have it deleted at any time" + (CONTACT_EMAIL ? " by writing to " : "");
   if (CONTACT_EMAIL) {
@@ -412,9 +414,9 @@
     var n = num("c-n", 100000), p = num("c-p", 100000), l = num("c-l", 100);
     var gain = n * p * (l / 100);
     $("c-out").textContent = fmt(gain) + " a year";
-    var plan = 19 * 12;
+    var plan = 12 * 12;
     $("c-note").textContent = gain > 0
-      ? "That is about " + (gain / plan >= 10 ? Math.round(gain / plan) : (gain / plan).toFixed(1)) + " times the yearly cost of a $19 plan."
+      ? "That is about " + (gain / plan >= 10 ? Math.round(gain / plan) : (gain / plan).toFixed(1)) + " times the yearly cost of the $12 founding plan."
       : "Enter your numbers above.";
   }
   ["c-n", "c-p", "c-l"].forEach(function (id) { $(id).addEventListener("input", calc); });
